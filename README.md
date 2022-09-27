@@ -8,10 +8,12 @@ Script that extracts avatars and worlds from vrc cache
 - Done!
 
 # Usage
-To use simply use this script open command line and run `python script.py -o [output directory] --nonaming`
-**output directory should exist!**
+To use simply use this script open command line and run `python script.py -o [output directory] --nonaming` Plese note, that **output directory should exist!**
+
 If you want more advanced usage and avatar naming use `-u [username] -p [password] ` instead of `--nonaming`
 where `username` and `password` is your vrchat credentials (used to VRChat Api calls for naming) **2fa is not currently supported! **
+
+
 Cmdline args and their description:
 - `-s [SIZE] ` maximum size of vrchat avatar in MB
 - `-i [path to vrchat cache] ` path to vrchat cache, in case when auto detection does not work (Cache-Windows Player directory)
