@@ -18,4 +18,4 @@ Cmdline args and their description:
 - `-mins [SIZE] ` minimum size of avatar in MB
 - `-asr [path to AssetRipper.exe] ` path to AssetRipper.exe when installed into different directory
 - `-v` verbose output of assetripper
-- and of course `-h` prints help 
+- and of course `-h` prints help
