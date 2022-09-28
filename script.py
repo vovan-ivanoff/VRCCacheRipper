@@ -25,7 +25,7 @@ parser.add_argument("-u","--username", type=str,help="username of vrc account fo
 parser.add_argument("-p","--password", type=str,help="password of vrc account for avatar naming, if you dont want use this, use --nonaming",required=not '--nonaming' in sys.argv)
 parser.add_argument("-v","--verbose", action="store_true",help="verbose the output", required=False)
 parser.add_argument("-s","--size", type=int,help="maximum size of avatar in MB(default 60MB)", required=False, default=60)
-parser.add_argument("-mins","--minsize", type=int,help="mminimum size of avatar in MB(default 0.1MB)", required=False, default=0.1)
+parser.add_argument("-mins","--minsize", type=int,help="mminimum size of avatar in MB(default 0MB)", required=False, default=0)
 parser.add_argument("-asr","--assetripper", type=str,help="path to assetripper.exe", required=False, default="./AssetRipper.exe")
 args = parser.parse_args()
 
@@ -146,7 +146,7 @@ def exportIt():
     for p in pathes:                    #из всех файлов выбираем предположительно аватары
         for j in os.listdir(p):
             size =os.path.getsize(p+'\\'+j)
-            if(size > int(args.minsize *1000000) and size < args.size *1000000):
+            if(size > (100+(args.minsize *1000000)) and size < args.size *1000000):
                 valid.append(p+'\\'+j)
     #print(valid)
 
@@ -185,24 +185,25 @@ def nameIt():
         try:
             src = outputDir+f"\exported\{i}\ExportedProject\Assets\Asset_Bundles"
             id = os.listdir(src)[0]
-            #print(f"{i}: "+id)
-            if id != "customavatar.unity3d":
-                id = id.removeprefix("prefab-id-v1_")
-                id = id.removesuffix(".prefab.unity3d")
-                arr =id.split("_")
-                id = arr[0]+"_"+arr[1]
-                avatar_name = getname(id)
-                if(avatar_name != None):
-                    try:
-                        print(f'{i}: '+id +" name: "+avatar_name)
-                        os.rename(outputDir+f"\exported\{i}", outputDir+f"\exported\{get_valid_filename(avatar_name)}")
-                    except PermissionError as e:
-                        print('renaming failed', e)
-                        f = open(outputDir+f"\exported\__Names.txt", "a")
-                        f.write(str(f'{i}:name: {get_valid_filename(avatar_name)}\n'))
-                        f.close()
-                    except FileExistsError as e:
-                        os.rename(outputDir+f"\exported\{i}", outputDir+f"\exported\{avatar_name}_1")
+            if not args.nonaming:
+                #print(f"{i}: "+id)
+                if id != "customavatar.unity3d":
+                    id = id.removeprefix("prefab-id-v1_")
+                    id = id.removesuffix(".prefab.unity3d")
+                    arr =id.split("_")
+                    id = arr[0]+"_"+arr[1]
+                    avatar_name = getname(id)
+                    if(avatar_name != None):
+                        try:
+                            print(f'{i}: '+id +" name: "+avatar_name)
+                            os.rename(outputDir+f"\exported\{i}", outputDir+f"\exported\{get_valid_filename(avatar_name)}")
+                        except PermissionError as e:
+                            print('renaming failed', e)
+                            f = open(outputDir+f"\exported\__Names.txt", "a")
+                            f.write(str(f'{i}:name: {get_valid_filename(avatar_name)}\n'))
+                            f.close()
+                        except FileExistsError as e:
+                            os.rename(outputDir+f"\exported\{i}", outputDir+f"\exported\{avatar_name}_1")
         except FileNotFoundError:
             os.rename(outputDir+f"\exported\{i}", outputDir+f"\exported\world_{i}")
 
@@ -210,6 +211,5 @@ def nameIt():
 print("strating...(This Might take a while.....)")
 exportIt()
 unpackIt()
-if not args.nonaming:
-    nameIt()
+nameIt()
 
