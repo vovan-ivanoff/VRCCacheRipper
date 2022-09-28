@@ -1,7 +1,7 @@
 # VRCCacheRipper
 Script that extracts avatars and worlds from vrc cache
 
-ru documentation: [a relative link](other_file.md)
+Русская документация: [Тык](Rudoc.md)
 # Getting Started
 - Download and unpack AssetRipper from here: `https://github.com/AssetRipper/AssetRipper`
 - Download this script and place it into AssetRipper folder(where AssetRipper.exe is located)
