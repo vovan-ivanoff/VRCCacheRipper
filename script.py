@@ -150,7 +150,7 @@ def exportIt():
                 valid.append(p+'\\'+j)
     #print(valid)
 
-
+    print(f"found {len(valid)} files")
     for i in range(len(valid)):         #переименовываем файл аватара __data  в .vrca и копируем в папку для экспорта
         dst = outputDir +f"\{i}.vrca"
         procent = (i+1) / len(valid)*100
@@ -215,8 +215,6 @@ def classify(src):
         return "nardo"
     elif "rex_hands_fist.anim" in ls:
         return "rex"
-    elif "Ear Left Up.anim" or "AH.anim" in ls:
-        return "wicker"
     else:
         return ""
 
@@ -224,9 +222,13 @@ def classifyIt():
     wd = outputDir+"\exported\\"
     files = os.listdir(wd)
     for i in range(0,len(files)):
-        speicie = classify(wd+files[i])
-        os.rename(wd+files[i], wd+f"({speicie})_"+files[i])
-        
+        try:
+            speicie = classify(wd+files[i])
+            os.rename(wd+files[i], wd+f"({speicie})_"+files[i])
+        except:
+            pass
+
+       
 
 print("strating...(This Might take a while.....)")
 exportIt()
