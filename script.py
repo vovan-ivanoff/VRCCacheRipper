@@ -185,6 +185,7 @@ def nameIt():
         try:
             src = outputDir+f"\exported\{i}\ExportedProject\Assets\Asset_Bundles"
             id = os.listdir(src)[0]
+            
             if not args.nonaming:
                 #print(f"{i}: "+id)
                 if id != "customavatar.unity3d":
@@ -207,9 +208,29 @@ def nameIt():
         except FileNotFoundError:
             os.rename(outputDir+f"\exported\{i}", outputDir+f"\exported\world_{i}")
 
+def classify(src):
+    path = src + "\ExportedProject\Assets\AnimationClip"
+    ls=os.listdir(path)
+    if "dragon_hands_fist.anim" in ls:
+        return "nardo"
+    elif "rex_hands_fist.anim" in ls:
+        return "rex"
+    elif "Ear Left Up.anim" or "AH.anim" in ls:
+        return "wicker"
+    else:
+        return ""
+
+def classifyIt():
+    wd = outputDir+"\exported\\"
+    files = os.listdir(wd)
+    for i in range(0,len(files)):
+        speicie = classify(wd+files[i])
+        os.rename(wd+files[i], wd+f"({speicie})_"+files[i])
+        
 
 print("strating...(This Might take a while.....)")
 exportIt()
 unpackIt()
 nameIt()
+classifyIt()
 
