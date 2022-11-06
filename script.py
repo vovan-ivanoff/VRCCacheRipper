@@ -209,14 +209,43 @@ def nameIt():
             os.rename(outputDir+f"\exported\{i}", outputDir+f"\exported\world_{i}")
 
 def classify(src):
-    path = src + "\ExportedProject\Assets\AnimationClip"
-    ls=os.listdir(path)
-    if "dragon_hands_fist.anim" in ls:
-        return "nardo"
-    elif "rex_hands_fist.anim" in ls:
-        return "rex"
-    else:
-        return ""
+    avat = src + "\ExportedProject\Assets\Avatar"
+    ls=os.listdir(avat)
+    for str in ls:
+        if "Nardo" in str:
+            return "(nardo)_"
+        elif "Re" in str:
+            return "(rex)_"
+        elif "Wicker" in str:
+            return "(wicker)_"
+        elif "Can" in str:
+            return "(canine)_"
+        elif "Taidum" in str:
+            return "(taidum)_"
+        elif "Angel" in str:
+            return "(dutchie)_"
+        elif "Pro" in str:
+            return "(proto)_"
+        elif "avali" in str:
+            return "(avali)_"
+        else:
+            pass
+    anim = src + "\ExportedProject\Assets\AnimationClip"
+    ls = os.listdir(anim)
+    for str in ls:
+        if "dragon" in str:
+            return "(nardo)_"
+        elif "rex" in str:
+            return "(rex)_"
+        else: return ""
+    tex = src + "\ExportedProject\Assets\Texture2D"
+    ls = os.listdir(tex)
+    for str in ls:
+        if "dragon" in str:
+            return "(nardo)_"
+        elif "Rex" in str:
+            return "(rex)_"
+        else: return ""
 
 def classifyIt():
     wd = outputDir+"\exported\\"
@@ -224,8 +253,14 @@ def classifyIt():
     for i in range(0,len(files)):
         try:
             speicie = classify(wd+files[i])
-            os.rename(wd+files[i], wd+f"({speicie})_"+files[i])
-        except:
+            os.rename(wd+files[i], wd+speicie+files[i])
+        except PermissionError as e:
+            print('renaming failed', e)
+            f = open(outputDir+f"\exported\__Names.txt", "a")
+            f.write(str(f'{i}:type: {speicie}\n'))
+            f.close()
+            pass
+        except Exception as e:
             pass
 
        
