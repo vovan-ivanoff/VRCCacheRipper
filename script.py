@@ -27,6 +27,7 @@ parser.add_argument("-v","--verbose", action="store_true",help="verbose the outp
 parser.add_argument("-s","--size", type=int,help="maximum size of avatar in MB(default 60MB)", required=False, default=60)
 parser.add_argument("-mins","--minsize", type=int,help="mminimum size of avatar in MB(default 0MB)", required=False, default=0)
 parser.add_argument("-asr","--assetripper", type=str,help="path to assetripper.exe", required=False, default="./AssetRipper.exe")
+parser.add_argument("-clsf","--classify", action="store_true",help="dont unpack, only classifu and name", required=False)
 args = parser.parse_args()
 
 
@@ -266,8 +267,9 @@ def classifyIt():
        
 
 print("strating...(This Might take a while.....)")
-exportIt()
-unpackIt()
+if not args.classify:
+    exportIt()
+    unpackIt()
 nameIt()
 classifyIt()
 
