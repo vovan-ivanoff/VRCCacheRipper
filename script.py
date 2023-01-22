@@ -184,8 +184,9 @@ def nameIt():
     f.close()
     for i in range(len(valid)): #из распакованных папок берем avtr_id, через vrchat api запрашиваем имя аватара, если получаем ответ то переименовываем папку
         try:
-            src = outputDir+f"\exported\{i}\ExportedProject\Assets\Asset_Bundles"
-            id = os.listdir(src)[0]
+            src = outputDir+f"\exported\{i}\ExportedProject\Assets"
+            lst=[x for x in os.listdir(src) if x.startswith('prefab-id')]
+            id = lst[0]
             
             if not args.nonaming:
                 #print(f"{i}: "+id)
