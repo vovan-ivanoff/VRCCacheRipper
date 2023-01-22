@@ -182,17 +182,20 @@ def nameIt():
     f = open(outputDir+f"\exported\__Names.txt", "w")   #чистим файлик
     f.write('') 
     f.close()
-    for i in range(len(valid)): #из распакованных папок берем avtr_id, через vrchat api запрашиваем имя аватара, если получаем ответ то переименовываем папку
+    for i in range(len(os.listdir(outputDir+f"\exported"))-1): #из распакованных папок берем avtr_id, через vrchat api запрашиваем имя аватара, если получаем ответ то переименовываем папку
         try:
             src = outputDir+f"\exported\{i}\ExportedProject\Assets"
-            lst=[x for x in os.listdir(src) if x.startswith('prefab-id')]
+            wd=os.listdir(src)
+            lst=[i for i in wd if i.endswith('.prefab')]
+            if lst == []:
+                raise FileNotFoundError
             id = lst[0]
             
             if not args.nonaming:
                 #print(f"{i}: "+id)
                 if id != "customavatar.unity3d":
                     id = id.removeprefix("prefab-id-v1_")
-                    id = id.removesuffix(".prefab.unity3d")
+                    id = id.removesuffix(".prefab")
                     arr =id.split("_")
                     id = arr[0]+"_"+arr[1]
                     avatar_name = getname(id)
