@@ -209,7 +209,7 @@ def nameIt():
                             f.write(str(f'{i}:name: {get_valid_filename(avatar_name)}\n'))
                             f.close()
                         except FileExistsError as e:
-                            os.rename(outputDir+f"\exported\{i}", outputDir+f"\exported\{avatar_name}_1")
+                            pass
         except FileNotFoundError:
             os.rename(outputDir+f"\exported\{i}", outputDir+f"\exported\world_{i}")
 
