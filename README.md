@@ -4,13 +4,11 @@ also supports classification by model (rex, nardo, wicker, etc...)
 
 Русская документация: [Тык](Rudoc.md)
 # Getting Started
-- Download and unpack AssetRipper from here: `https://github.com/AssetRipper/AssetRipper`
-- Download this script and place it into AssetRipper folder(where AssetRipper.exe is located)
-- run `pip install vrchatapi`
+- Run `insatll.bat` this batch file automatically downloads and installs everything needed 
 - Done!
 
 # Usage
-To use simply use this script open command line and run `python script.py -o [output directory] --nonaming` Please note, that ***output directory should exist!***
+To use simply use this script open command line and run `ripper.bat -o [output directory] --nonaming` Please note, that ***output directory should exist!***
 
 If you want more advanced usage and avatar naming use `-u [username] -p [password] ` instead of `--nonaming`
 where `username` and `password` is any account(even newly created) vrchat credentials (used to VRChat Api calls for naming) **2fa is not currently supported! **
