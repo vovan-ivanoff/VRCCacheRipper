@@ -9,7 +9,7 @@ import atexit
 import argparse
 import sys
 import json
-
+from threading import Thread,Lock
 
 class MyParser(argparse.ArgumentParser):
     def error(self, message):
@@ -25,6 +25,7 @@ parser.add_argument("-u","--username", type=str,help="username of vrc account fo
 parser.add_argument("-p","--password", type=str,help="password of vrc account for avatar naming, if you dont want use this, use --nonaming",required=not '--nonaming' in sys.argv)
 parser.add_argument("-v","--verbose", action="store_true",help="verbose the output", required=False)
 parser.add_argument("-s","--size", type=int,help="maximum size of avatar in MB(default 60MB)", required=False, default=60)
+parser.add_argument("-j","--j", type=int,help="how many threads to use(default=4)", required=False, default=4)
 parser.add_argument("-mins","--minsize", type=int,help="mminimum size of avatar in MB(default 0MB)", required=False, default=0)
 parser.add_argument("-asr","--assetripper", type=str,help="path to assetripper.exe", required=False, default="./AssetRipper.exe")
 parser.add_argument("-clsf","--classify", action="store_true",help="dont unpack, only classifu and name", required=False)
@@ -50,6 +51,9 @@ if not args.nonaming:
 
 pathes = []
 valid = []
+cnt =0
+ctr =0 
+lock = Lock()
 
 def getCachePath(): #ищем путь к кешу и если не находи, то кидаем эксепшон
     path = os.getenv('APPDATA')
@@ -134,7 +138,22 @@ def get_path(dir):          #ммм, рекурсия :3
         except NotADirectoryError:
             pathes.append(dir)
             return
-            
+
+
+def run_asr(tsk):
+    global ctr
+    for o in tsk:
+        dst= outputDir +f"\{o}.vrca"
+        out= f'{outputDir}\exported\{o}'
+        r = subprocess.run([assetripperPath, dst,'-o',out],input='\n', encoding='ascii',stdout=subprocess.DEVNULL,stderr=subprocess.STDOUT)
+        while lock.locked():
+            pass #wait to unlock lock by other thread
+        with lock:
+            ctr+=1
+        if ctr%args.j == 0 and ctr//args.j <= cnt:
+            print(f"Unpacked: {ctr//args.j} files, {((ctr//args.j)*100/cnt):0.2f}%")
+
+
 def exportIt():
     directories = os.listdir(cacheDir) #рекурсивно ищем папки в кеше vrchat'а
     #print(directories)
@@ -159,23 +178,30 @@ def exportIt():
         print(f"exported:{procent:0.2f}% ({i+1} files)")
 
 def unpackIt():
-    for i in range(len(valid)):         #создаем папки и распаковываем туда .vrca с помощью ассетриппера
-        dst = outputDir +f"\{i}.vrca"
-        procent = (i+1) / len(valid)*100
-        #print(outputDir+f"\exported\{i}")
-        try:
-            os.mkdir(outputDir+f"\exported\{i}")
-        except FileExistsError:
-            pass
-        except FileNotFoundError:
-            os.mkdir(outputDir+"\exported")
-            os.mkdir(outputDir+f"\exported\{i}")
-        #print([assetripperDir, dst,f'-o {outputDir}\exported\{i}'])
-        if args.verbose:
-            r = subprocess.run([assetripperPath, dst,f'-o', f'{outputDir}\exported\{i}'],input='\n', encoding='ascii')
-        else:
-            r = subprocess.run([assetripperPath, dst,f'-o', f'{outputDir}\exported\{i}'],input='\n', encoding='ascii',stdout=subprocess.DEVNULL,stderr=subprocess.STDOUT)
-        print(f"Unpacked:{procent:0.2f}% ({i+1} files)")
+        global cnt
+        thr=[]
+        tasks=[[]]*args.j #create threads task list
+        for y in range(args.j-1):
+            tasks[y].append([])
+        cnt=len(os.listdir(outputDir))-1
+        for i in range(cnt):         #создаем папки и распаковываем туда .vrca с помощью ассетриппера
+            #split by threads:
+            tasks[i%(args.j)].append(i)
+            #print(outputDir+f"\exported\{i}")
+            try:
+                os.mkdir(outputDir+f"\exported\{i}")
+            except FileExistsError:
+                pass
+            except FileNotFoundError:
+                os.mkdir(outputDir+"\exported")
+                os.mkdir(outputDir+f"\exported\{i}")
+            #print([assetripperDir, dst,f'-o {outputDir}\exported\{i}'])
+        for l in range(args.j):
+            thr.append(Thread(target=run_asr,args=[tasks[l]]))
+            thr[l].start()
+        for x in range(args.j):
+            thr[x].join()
+        #print(f"Unpacked:{procent:0.2f}% ({i+1} files)")
 
 
 def nameIt():
