@@ -5,6 +5,8 @@ import shutil
 import subprocess
 import vrchatapi
 from vrchatapi.api import authentication_api,avatars_api
+from vrchatapi.exceptions import UnauthorizedException
+from vrchatapi.models.two_factor_auth_code import TwoFactorAuthCode
 import atexit
 import argparse
 import sys
@@ -42,11 +44,20 @@ if not args.nonaming:
     api_client = vrchatapi.ApiClient(configuration)
     api_instance = authentication_api.AuthenticationApi(api_client) 
     try:
-        # Login and/or Get Current User Info
-        api_response = api_instance.get_current_user()
-        print('Logged in as: ' + api_response.display_name)
+        # Step 3. Calling getCurrentUser on Authentication API logs you in if the user isn't already logged in.
+        current_user = api_instance.get_current_user()
+    except UnauthorizedException as e:
+        if UnauthorizedException.status == 200:
+            # Step 3.5. Calling verify2fa if the account has 2FA enabled
+            auth_api.verify2_fa(two_factor_auth_code=TwoFactorAuthCode(input("2FA Code: ")))
+            current_user = auth_api.get_current_user()
+        else:
+            print("Exception when calling API: %s\n", e)
     except vrchatapi.ApiException as e:
-        print("Exception when calling AuthenticationApi->get_current_user: %s\n" % e)
+        print("Exception when calling API: %s\n", e)
+    except:
+        pass
+
     #все, залогинились, идем дальше
 
 pathes = []
@@ -205,9 +216,6 @@ def unpackIt():
 
 
 def nameIt():
-    f = open(outputDir+f"\exported\__Names.txt", "w")   #чистим файлик
-    f.write('') 
-    f.close()
     for i in range(len(os.listdir(outputDir+f"\exported"))-1): #из распакованных папок берем avtr_id, через vrchat api запрашиваем имя аватара, если получаем ответ то переименовываем папку
         try:
             src = outputDir+f"\exported\{i}\ExportedProject\Assets"
@@ -230,10 +238,7 @@ def nameIt():
                             print(f'{i}: '+id +" name: "+avatar_name)
                             os.rename(outputDir+f"\exported\{i}", outputDir+f"\exported\{get_valid_filename(avatar_name)}")
                         except PermissionError as e:
-                            print('renaming failed', e)
-                            f = open(outputDir+f"\exported\__Names.txt", "a")
-                            f.write(str(f'{i}:name: {get_valid_filename(avatar_name)}\n'))
-                            f.close()
+                            pass
                         except FileExistsError as e:
                             pass
         except FileNotFoundError:
