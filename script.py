@@ -7,6 +7,7 @@ import vrchatapi
 from vrchatapi.api import authentication_api,avatars_api
 from vrchatapi.exceptions import UnauthorizedException
 from vrchatapi.models.two_factor_auth_code import TwoFactorAuthCode
+from vrchatapi.models.two_factor_email_code import TwoFactorEmailCode
 import atexit
 import argparse
 import sys
@@ -46,17 +47,20 @@ if not args.nonaming:
     try:
         # Step 3. Calling getCurrentUser on Authentication API logs you in if the user isn't already logged in.
         current_user = api_instance.get_current_user()
+    except ValueError as e:
+        # Step 3.5. Calling verify2fa if the account has 2FA enabled
+        api_instance.verify2_fa_email_code(two_factor_email_code=TwoFactorEmailCode(input("2FA Code: ")))
+        current_user = api_instance.get_current_user()
     except UnauthorizedException as e:
         if UnauthorizedException.status == 200:
             # Step 3.5. Calling verify2fa if the account has 2FA enabled
-            auth_api.verify2_fa(two_factor_auth_code=TwoFactorAuthCode(input("2FA Code: ")))
-            current_user = auth_api.get_current_user()
+            authentication_api.verify2_fa(two_factor_auth_code=TwoFactorAuthCode(input("2FA Code: ")))
+            current_user = authentication_api.get_current_user()
         else:
             print("Exception when calling API: %s\n", e)
     except vrchatapi.ApiException as e:
         print("Exception when calling API: %s\n", e)
-    except:
-        pass
+
 
     #все, залогинились, идем дальше
 
@@ -65,6 +69,22 @@ valid = []
 cnt =0
 ctr =0 
 lock = Lock()
+
+pattern_a=re.compile(rb"prefab-id-v1_avtr_([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})")
+pattern_w=re.compile(rb"wrld_([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})")
+def get_id(file):
+    with open(file,"rb") as f:
+        s=f.read()
+        res=pattern_a.findall(s)
+        if len(res)==2:
+            return "avtr_"+str(res[0])[2:-1:]
+        else:
+            try:
+                return "wrld_"+str(pattern_w.findall(s)[0])[2:-1:]
+            except:
+                return None
+
+
 
 def getCachePath(): #ищем путь к кешу и если не находи, то кидаем эксепшон
     path = os.getenv('APPDATA')
@@ -121,7 +141,7 @@ def get_valid_filename(s):          #превращаем имена в норм
     return re.sub(r'(?u)[^-\w.]', '', s)
 
 
-def getname(id):                    #тут мы обращаемся к api и выделяем имя аватара
+def getname_a(id):                    #тут мы обращаемся к api и выделяем имя аватара
     # Instantiate instances of API classes
     api_instance = avatars_api.AvatarsApi(api_client)
     avatar_id = id # str | 
@@ -151,11 +171,12 @@ def get_path(dir):          #ммм, рекурсия :3
             return
 
 
-def run_asr(tsk):
+def run_asr(tsk,lst):
     global ctr
-    for o in tsk:
-        dst= outputDir +f"\{o}.vrca"
-        out= f'{outputDir}\exported\{o}'
+    for o in  range(len(tsk)):
+        
+        dst= outputDir +f"\{lst[tsk[o]]}"
+        out= f'{outputDir}\exported\{lst[tsk[o]]}'
         r = subprocess.run([assetripperPath, dst,'-o',out],input='\n', encoding='ascii',stdout=subprocess.DEVNULL,stderr=subprocess.STDOUT)
         while lock.locked():
             pass #wait to unlock lock by other thread
@@ -183,32 +204,36 @@ def exportIt():
 
     print(f"found {len(valid)} files")
     for i in range(len(valid)):         #переименовываем файл аватара __data  в .vrca и копируем в папку для экспорта
-        dst = outputDir +f"\{i}.vrca"
-        procent = (i+1) / len(valid)*100
-        shutil.copy(valid[i], dst)
-        print(f"exported:{procent:0.2f}% ({i+1} files)")
+        name=get_id(valid[i])
+        if name != None:
+            dst = outputDir +"\\"+name
+            procent = (i+1) / len(valid)*100
+            shutil.copy(valid[i], dst)
+            print(f"exported:{procent:0.2f}% ({i+1} files)")
 
 def unpackIt():
         global cnt
         thr=[]
+        ld= os.listdir(outputDir)
         tasks=[[]]*args.j #create threads task list
-        for y in range(args.j-1):
-            tasks[y].append([])
-        cnt=len(os.listdir(outputDir))-1
+        #for y in range(args.j-1):
+        #    tasks[y].append([None])
+        cnt=len(ld)-1
         for i in range(cnt):         #создаем папки и распаковываем туда .vrca с помощью ассетриппера
             #split by threads:
             tasks[i%(args.j)].append(i)
+            print(tasks[0])
             #print(outputDir+f"\exported\{i}")
             try:
-                os.mkdir(outputDir+f"\exported\{i}")
+                os.mkdir(outputDir+f"\exported\{ld[i]}")
             except FileExistsError:
                 pass
             except FileNotFoundError:
                 os.mkdir(outputDir+"\exported")
-                os.mkdir(outputDir+f"\exported\{i}")
+                os.mkdir(outputDir+f"\exported\{ld[i]}")
             #print([assetripperDir, dst,f'-o {outputDir}\exported\{i}'])
         for l in range(args.j):
-            thr.append(Thread(target=run_asr,args=[tasks[l]]))
+            thr.append(Thread(target=run_asr,args=[tasks[l],ld]))
             thr[l].start()
         for x in range(args.j):
             thr[x].join()
@@ -216,33 +241,18 @@ def unpackIt():
 
 
 def nameIt():
-    for i in range(len(os.listdir(outputDir+f"\exported"))-1): #из распакованных папок берем avtr_id, через vrchat api запрашиваем имя аватара, если получаем ответ то переименовываем папку
-        try:
-            src = outputDir+f"\exported\{i}\ExportedProject\Assets"
-            wd=os.listdir(src)
-            lst=[i for i in wd if i.endswith('.prefab')]
-            if lst == []:
-                raise FileNotFoundError
-            id = lst[0]
-            
-            if not args.nonaming:
-                #print(f"{i}: "+id)
-                if id != "customavatar.unity3d":
-                    id = id.removeprefix("prefab-id-v1_")
-                    id = id.removesuffix(".prefab")
-                    arr =id.split("_")
-                    id = arr[0]+"_"+arr[1]
-                    avatar_name = getname(id)
-                    if(avatar_name != None):
-                        try:
-                            print(f'{i}: '+id +" name: "+avatar_name)
-                            os.rename(outputDir+f"\exported\{i}", outputDir+f"\exported\{get_valid_filename(avatar_name)}")
-                        except PermissionError as e:
-                            pass
-                        except FileExistsError as e:
-                            pass
-        except FileNotFoundError:
-            os.rename(outputDir+f"\exported\{i}", outputDir+f"\exported\world_{i}")
+    for f in os.listdir(outputDir):
+        print(f) #из распакованных папок берем avtr_id, через vrchat api запрашиваем имя аватара, если получаем ответ то переименовываем папку
+        #if str(f).startswith("avtr"):
+        avatar_name = getname_a(f)
+        if(avatar_name != None):
+            try:
+                print(f+" name: "+avatar_name)
+                os.rename(outputDir+"\\"+f, outputDir+"\\"+get_valid_filename(avatar_name))
+            except PermissionError as e:
+                pass
+            except FileExistsError as e:
+                pass
 
 def classify(src):
     avat = src + "\ExportedProject\Assets\Avatar"
@@ -304,7 +314,7 @@ def classifyIt():
 print("strating...(This Might take a while.....)")
 if not args.classify:
     exportIt()
+    nameIt()
     unpackIt()
-nameIt()
 classifyIt()
 
