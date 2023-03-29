@@ -205,11 +205,12 @@ def exportIt():
     print(f"found {len(valid)} files")
     for i in range(len(valid)):         #переименовываем файл аватара __data  в .vrca и копируем в папку для экспорта
         name=get_id(valid[i])
-        if name != None:
-            dst = outputDir +"\\"+name
-            procent = (i+1) / len(valid)*100
-            shutil.copy(valid[i], dst)
-            print(f"exported:{procent:0.2f}% ({i+1} files)")
+        if name == None:
+            name=str(i)
+        dst = outputDir +"\\"+name
+        procent = (i+1) / len(valid)*100
+        shutil.copy(valid[i], dst)
+        print(f"exported:{procent:0.2f}% ({i+1} files)")
 
 def unpackIt():
         global cnt
@@ -314,7 +315,8 @@ def classifyIt():
 print("strating...(This Might take a while.....)")
 if not args.classify:
     exportIt()
-    nameIt()
+    if not args.nonaming:
+        nameIt()
     unpackIt()
 classifyIt()
 
