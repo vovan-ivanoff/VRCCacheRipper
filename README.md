@@ -1,4 +1,8 @@
-# VRCCacheRipper
+# ARCHIVED AND DOES NOT WORK. This project is now abandoned!
+ VRChat drastically changed their API and added fire encryption. I am in no interest to maintain this.
+# ~~VRCCacheRipper~~
+
+
 Script that extracts avatars and worlds from vrc cache
 also supports classification by model (rex, nardo, wicker, etc...)
 
